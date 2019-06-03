@@ -173,8 +173,6 @@ public class Game {
 		List<Point> temp = new ArrayList<>();
 		for (Point p : list) {
 			if (b.checkBounds(p))
-				// System.out.println("asdf: " + (checkers[(int)p.getX()][(int)p.getY()] ==
-				// null));
 				if (b.checkBounds(p) && checkers[(int) p.getX()][(int) p.getY()] == null) // check if valid location in board and space already occupied
 					temp.add(p);
 		}

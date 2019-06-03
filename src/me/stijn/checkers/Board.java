@@ -129,11 +129,15 @@ public class Board extends JPanel implements MouseListener{
 			//TODO ANIMATE
 			game.checkers[x][y] = game.checkers[game.selectedX][game.selectedY];
 			game.checkers[game.selectedX][game.selectedY] = null;
-			
-			
-			
-			
-			
+
+			if (game.hasToStrike) { //TODO FIX
+				int strikeX, strikeY;
+				strikeX = (Math.abs(x - game.selectedX) / 2) + x;
+				strikeY = (Math.abs(y - game.selectedY) / 2) + y;
+				game.checkers[strikeX][strikeY] = null;
+				System.out.println("removed: " + strikeX + " : " + strikeY);
+			}
+
 			game.changeTurns();
 			return;
 		}
