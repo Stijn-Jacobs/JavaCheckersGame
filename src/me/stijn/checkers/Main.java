@@ -5,14 +5,14 @@ import java.awt.Dimension;
 import javax.swing.JFrame;
 
 import javafx.application.Application;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class Main extends Application {
+	
+	public static boolean showFPS = false;
 
 	private static Board board;
 	private static JFrame panel;
-	public static boolean fps = false;
 
 	public static void main(String args[]) {
 		launch();
@@ -30,7 +30,7 @@ public class Main extends Application {
 	}
 	
 	public static void resetGame() {
-		System.out.println("Reset");
+		System.out.println("Game reset");
 		panel.remove(board);
 		panel.removeKeyListener(board);
 		board = new Board();

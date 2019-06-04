@@ -15,29 +15,20 @@ import java.awt.event.MouseListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
 import java.awt.image.IndexColorModel;
-import java.awt.image.LookupOp;
-import java.awt.image.ShortLookupTable;
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import javafx.animation.AnimationTimer;
-import javafx.application.Platform;
-import javafx.scene.input.KeyCode;
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.Checker.CheckerType;
-import me.stijn.checkers.objects.MoveAnimation;
 
 public class Board extends JPanel implements MouseListener,KeyListener{
 
-	public static final int BOARDSIZE = 10;
+	public static final int BOARDSIZE = 10, CHECKER_ANIMATION_TIME = 100;
 	public static final Color BLACKTILE = Color.GRAY, WHITETILE = Color.WHITE;
 	public static final Color BLACKCHECKER = Color.BLACK, WHITECHECKER = Color.LIGHT_GRAY;
 	public static BufferedImage KINGIMGWHITE,KINGIMGBLACK;
@@ -87,7 +78,7 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		drawAnimating(g2d);
 
 		System.out.println("Frame took: " + (System.currentTimeMillis() - time) + " ms to render");
-		if ((System.currentTimeMillis() - time) > 0 && Main.fps) {
+		if ((System.currentTimeMillis() - time) > 0 && Main.showFPS) {
 			g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN,30));
 			g2d.drawString("FPS: " + 1000 / (System.currentTimeMillis() - time), 1, 50);
 		}
@@ -100,7 +91,7 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		for (Point p : removalAnimation.keySet()) {
 			Integer progress = removalAnimation.get(p);
 			g.setColor(Color.RED);
-			g.fill(getEllipseFromCenter((p.x * CHECKERSIZE) + XOFFSET + (CHECKERSIZE / 2), (p.y * CHECKERSIZE) + YOFFSET + (CHECKERSIZE / 2), CHECKERSIZE / 100D * progress, CHECKERSIZE / 100D * progress));
+			g.fill(getEllipseFromCenter((p.x * CHECKERSIZE) + XOFFSET + (CHECKERSIZE / 2), (p.y * CHECKERSIZE) + YOFFSET + (CHECKERSIZE / 2), (double)CHECKERSIZE / CHECKER_ANIMATION_TIME * progress, (double)CHECKERSIZE / CHECKER_ANIMATION_TIME * progress));
 		}
 	}
 	
@@ -192,13 +183,11 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 			return;
 		Checker selected = game.checkers[x][y];
 		if (selected == null && game.selectedPosibilities.contains(new Point(x,y))) {//check if he is trying to make a move to valid location
-			System.out.println("moved");
+			System.out.println("Moved checker: " + game.selectedX + " : " + game.selectedY + " to: " + x + " : " + y);
 			
 			Checker temp = game.checkers[game.selectedX][game.selectedY];
 			game.checkers[x][y] = null;
 			game.checkers[game.selectedX][game.selectedY] = null;
-			
-
 			
 			AnimationTimer animation = new AnimationTimer() {
 				long curtime = System.currentTimeMillis();
@@ -207,8 +196,8 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 				@Override
 				public void handle(long now) {
 					int frame = 0;
-					float xadd = (x - selectedX) / (float)100;
-					float yadd = (y - selectedY) / (float)100;
+					float xadd = (x - selectedX) / (float)CHECKER_ANIMATION_TIME;
+					float yadd = (y - selectedY) / (float)CHECKER_ANIMATION_TIME;
 					Point strike = null;
 					
 					//removes selection 
@@ -217,7 +206,6 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 					game.selectedX = -1;
 					game.selectedY = -1;
 					
-					
 					//handle strike animation and removal
 					if (game.hasToStrike) {
 						int strikeX, strikeY;
@@ -225,11 +213,11 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 						strikeY = ((y + selectedY) / 2);// + y;
 						game.checkers[strikeX][strikeY] = null;
 						strike = new Point(strikeX,strikeY);
-						System.out.println("removed: " + strikeX + " : " + strikeY);
+						System.out.println("Removed: " + strikeX + " : " + strikeY);
 					}
 					
-					while (frame <= 100) {
-						if (System.currentTimeMillis() - curtime < 3)
+					while (frame <= CHECKER_ANIMATION_TIME) {
+						if (System.currentTimeMillis() - curtime < 2)
 							continue;
 						curtime = System.currentTimeMillis();
 						if (strike != null)
@@ -248,14 +236,12 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 					if (y == BOARDSIZE-1 && temp.getType() == CheckerType.BLACK) 
 						temp.setType(CheckerType.BLACKKING);
 					
-					game.changeTurns(); 
+					game.changeTurns(x,y); 
 					stop();
 				}
 			};
 			
 			animation.start();
-
-
 			return;
 		}
 		
@@ -291,7 +277,10 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 			Main.resetGame();
 			break;
 		case KeyEvent.VK_END:
-			Main.fps = !Main.fps;
+			Main.showFPS = !Main.showFPS;
+			break;
+		case KeyEvent.VK_PAGE_DOWN:
+			game.changeTurns(-1,-1);
 			break;
 		}
 		

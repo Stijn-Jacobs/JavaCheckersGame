@@ -8,11 +8,10 @@ import java.util.Set;
 
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.Checker.CheckerType;
-import me.stijn.checkers.objects.MoveAnimation;
 
 public class Game {
 
-	private static final int CHECKERS = 20;
+	private static final int CHECKERS = 5;
 
 	Board b;
 	public Checker[][] checkers;
@@ -21,7 +20,7 @@ public class Game {
 	Set<Point> possibleSelections = new HashSet<>();
 	Set<Point> selectedPosibilities = new HashSet<>();
 	
-	boolean hasToStrike;
+	boolean hasToStrike = false;
 
 	GameState state;
 	Player turn;
@@ -56,6 +55,11 @@ public class Game {
 				checkers[x][y] = new Checker(CheckerType.WHITE);
 			}
 		}
+		
+		checkers[2][6] = new Checker(CheckerType.WHITEKING);
+		
+		//checkers[3][5] = new Checker(CheckerType.BLACK);
+		//checkers[3][3] = new Checker(CheckerType.BLACK);
 		calcPossible();
 	}
 
@@ -67,15 +71,28 @@ public class Game {
 		selectedX = x;
 		selectedY = y;
 		selectedPosibilities.clear();
-		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y)));
+		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
 	}
 
-	public void changeTurns() {
+	public void changeTurns(int x, int y) { 
 		selectedPosibilities.clear();
 		possibleSelections.clear();
 		selectedX = -1;
 		selectedY = -1;
+		if (hasToStrike && (x != -1 && y != -1)) { //has striked previous turn check if he can strike again
+			hasToStrike = false;
+			calculatePosibilities(new Point(x,y),1); //check if he can strike again
+			if (hasToStrike) { //can strike again
+				System.out.println("Strike again");
+				selectedX = x;
+				selectedY = y;
+				selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
+				return;
+			}
+		}
+		
 		hasToStrike = false;
+
 		if (turn == Player.BLACK)
 			turn = Player.WHITE;
 		else
@@ -101,7 +118,7 @@ public class Game {
 					possibleSelections.add(new Point(x, y));
 					continue;
 				}
-				if (!calculatePosibilities(new Point(x, y)).isEmpty() && !hasToStrike) {
+				if (!calculatePosibilities(new Point(x, y),1).isEmpty() && !hasToStrike) {
 					possibleSelections.add(new Point(x, y));
 				}
 			}
@@ -109,9 +126,9 @@ public class Game {
 		b.repaint();
 	}
 
-	public List<Point> calculatePosibilities(Point p) {
+	public List<Point> calculatePosibilities(Point p, int delta) {
 		int direction = getDirection();
-		if (checkers[p.x][p.y] == null) // check if checker selected is null and if so stop checking posibilities
+		if ((p.x == -1 && p.y == -1) || checkers[p.x][p.y] == null) // check if checker selected is null and if so stop checking posibilities
 			return new ArrayList<>();
 		Checker c = checkers[p.x][p.y];
 		boolean king = isKing(c);
@@ -123,18 +140,26 @@ public class Game {
 				hasToStrike = true;
 			}
 			System.out.println("Skip calced");
-			selectedPosibilities.addAll(checkSkips(p, 1));
+			//selectedPosibilities.addAll(checkSkips(p, 1)); //TODO TEST IF UNNESSESARY
 
 			return checkSkips(p, 1);
 		}
 		List<Point> temp = new ArrayList<>();
 
-		temp.add(new Point(p.x + 1, p.y + direction));
-		temp.add(new Point(p.x - 1, p.y + direction));
+		temp.add(new Point(p.x + delta, p.y + (direction * (delta))));
+		temp.add(new Point(p.x - delta, p.y + (direction * (delta))));
 		if (king) {
-			temp.add(new Point(p.x + 1, p.y + direction == -1 ? +1 : -1));
-			temp.add(new Point(p.x - 1, p.y + direction == -1 ? +1 : -1));
-
+			temp.add(new Point(p.x + delta, p.y + ((direction == -1 ? +1 : -1) * (delta))));
+			temp.add(new Point(p.x - delta, p.y + ((direction == -1 ? +1 : -1) * (delta))));
+			if (delta == 1) {
+				int dtemp = 2;
+				while(!calculatePosibilities(p, dtemp).isEmpty()){
+					selectedPosibilities.addAll(calculatePosibilities(p, dtemp));
+					dtemp++;
+				} 
+			}
+			
+			//System.out.println("ran: " + new Point(p.x + 1, p.y + (direction == -1 ? +1 : -1)) + " : " + new Point(p.x - 1, p.y + (direction == -1 ? +1 : -1)));
 		}
 		return checkValidLandingLocations(temp);
 	}
