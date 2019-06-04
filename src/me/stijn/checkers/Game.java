@@ -8,13 +8,14 @@ import java.util.Set;
 
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.Checker.CheckerType;
+import me.stijn.checkers.objects.MoveAnimation;
 
 public class Game {
 
 	private static final int CHECKERS = 20;
 
 	Board b;
-	Checker[][] checkers;
+	public Checker[][] checkers;
 	int selectedX, selectedY;
 	
 	Set<Point> possibleSelections = new HashSet<>();
@@ -121,6 +122,7 @@ public class Game {
 				selectedPosibilities.clear();
 				hasToStrike = true;
 			}
+			System.out.println("Skip calced");
 			selectedPosibilities.addAll(checkSkips(p, 1));
 
 			return checkSkips(p, 1);
@@ -165,7 +167,7 @@ public class Game {
 		return turn == Player.BLACK ? +1 : -1;
 	}
 
-	private boolean isKing(Checker c) {
+	public boolean isKing(Checker c) {
 		return (c.getType() == CheckerType.BLACKKING || c.getType() == CheckerType.WHITEKING);
 	}
 
