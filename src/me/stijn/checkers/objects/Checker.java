@@ -1,6 +1,8 @@
 package me.stijn.checkers.objects;
 
-public class Checker {
+import java.io.Serializable;
+
+public class Checker implements Serializable {
 	
 	private CheckerType type;
 	

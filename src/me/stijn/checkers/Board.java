@@ -39,7 +39,7 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 	public Game game;
 
 	public int CHECKERSIZE, XOFFSET, YOFFSET;
-
+	
 	/**
 	 * Board object where the checker game is playing on
 	 */
@@ -85,6 +85,8 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 			g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN,30));
 			g2d.drawString("FPS: " + 1000 / (System.currentTimeMillis() - time), 1, 50);
 		}
+		if (Main.debug)
+			g2d.drawString("DEBUG ENABLED:",1,100);
 	}
 	
 	/**
@@ -211,6 +213,22 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		if (!checkBounds(new Point(x,y)))
 			return;
 		Checker selected = game.checkers[x][y];
+		if (Main.debug ) {
+			if (!game.validSelected(new Point(game.selectedX,game.selectedY))) {
+				game.selectedX = x;
+				game.selectedY = y;
+				repaint();
+				return;
+			}
+			Checker temp = game.checkers[game.selectedX][game.selectedY];
+			game.checkers[game.selectedX][game.selectedY] = null;
+			game.checkers[x][y] = temp;
+			game.selectedX = -1;
+			game.selectedY = -1;
+			repaint();
+			return;
+		}
+		
 		if (selected == null && game.selectedPosibilities.contains(new Point(x,y))) {//check if he is trying to make a move to valid location
 			System.out.println("Moved checker: " + game.selectedX + " : " + game.selectedY + " to: " + x + " : " + y);
 			
@@ -237,9 +255,30 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 					
 					//handle strike animation and removal
 					if (game.hasToStrike) {
-						int strikeX, strikeY;
-						strikeX = ((x + selectedX) / 2);// + x;
-						strikeY = ((y + selectedY) / 2);// + y;
+						//get passed checker
+						int minx = x < selectedX ? x : selectedX;
+						int maxx = x > selectedX ? x : selectedX;
+						
+						int miny = x < selectedX ? y : selectedY;
+						int maxy = x > selectedX ? y : selectedY;
+						
+						System.out.println("Start: " + minx + " : " + miny + " | " + maxx + " : " + maxy);
+						
+						int tempy = miny;
+
+						int strikeX = 0, strikeY = 0;
+						
+						for (int tempx = minx; tempx < maxx; tempx++) {
+							//System.out.println("passed: " + tempx + " : " + tempy + " bools: " + (game.checkers[tempx][tempy] != null)  + " : " + (game.canBeSelected(game.checkers[tempx][tempy])));
+							if (game.checkers[tempx][tempy] != null && !game.canBeSelected(game.checkers[tempx][tempy])) {
+								strikeX = tempx;
+								strikeY = tempy;
+								break;
+							}
+							if (miny > maxy)
+								tempy--;
+							else tempy++;
+						}
 						game.checkers[strikeX][strikeY] = null;
 						strike = new Point(strikeX,strikeY);
 						System.out.println("Removed: " + strikeX + " : " + strikeY);
@@ -258,12 +297,6 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 					animating.remove(temp);
 					removalAnimation.remove(strike);
 					game.checkers[x][y] = temp;
-					
-					//handle king when reaching edge
-					if (y == 0 && temp.getType() == CheckerType.WHITE) 
-						temp.setType(CheckerType.WHITEKING);
-					if (y == BOARDSIZE-1 && temp.getType() == CheckerType.BLACK) 
-						temp.setType(CheckerType.BLACKKING);
 					
 					game.changeTurns(x,y); 
 					stop();
@@ -315,6 +348,15 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 			break;
 		case KeyEvent.VK_PAGE_DOWN:
 			game.changeTurns(-1,-1);
+			break;
+		case KeyEvent.VK_INSERT:
+			Main.saveGame();
+			break;
+		case KeyEvent.VK_HOME:
+			Main.loadGame();
+			break;
+		case KeyEvent.VK_PAGE_UP:
+			Main.debug = !Main.debug;
 			break;
 		}
 		

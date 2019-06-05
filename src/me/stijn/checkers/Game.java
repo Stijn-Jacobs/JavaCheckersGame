@@ -1,6 +1,7 @@
 package me.stijn.checkers;
 
 import java.awt.Point;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,9 +10,9 @@ import java.util.Set;
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.Checker.CheckerType;
 
-public class Game {
+public class Game implements Serializable {
 
-	private static final int CHECKERS = 20;
+	private static final int CHECKERS = 10;
 
 	Board b;
 	public Checker[][] checkers;
@@ -34,7 +35,7 @@ public class Game {
 		checkers = new Checker[Board.BOARDSIZE][Board.BOARDSIZE];
 
 		state = GameState.RUNNING;
-		turn = Player.BLACK;
+		turn = Player.WHITE;
 		selectedX = -1;
 		selectedY = -1;
 		initCheckers();
@@ -63,6 +64,8 @@ public class Game {
 			}
 		}
 		
+		checkers[3][5] = new Checker(CheckerType.BLACK);
+		checkers[7][5] = new Checker(CheckerType.BLACK);
 		checkers[2][6] = new Checker(CheckerType.WHITEKING);
 		
 		//checkers[3][5] = new Checker(CheckerType.BLACK);
@@ -86,6 +89,7 @@ public class Game {
 	public void setSelected(int x, int y) {
 		selectedX = x;
 		selectedY = y;
+		hasToStrike = false; //TODO VERIFY
 		selectedPosibilities.clear();
 		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
 	}
@@ -100,31 +104,44 @@ public class Game {
 		possibleSelections.clear();
 		selectedX = -1;
 		selectedY = -1;
-		if (hasToStrike && (x != -1 && y != -1)) { //has striked previous turn check if he can strike again
+		if (hasToStrike && validSelected(new Point(x,y))) { //has striked previous turn check if he can strike again
 			hasToStrike = false;
+			System.out.println("IMPORTANT: " + calculatePosibilities(new Point(x,y),1));
 			calculatePosibilities(new Point(x,y),1); //check if he can strike again
 			if (hasToStrike) { //can strike again
 				System.out.println("Strike again");
 				selectedX = x;
 				selectedY = y;
 				selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
+				b.repaint();
 				return;
 			}
 		}
 		
 		hasToStrike = false;
+		
+		//handle king when reaching edge
+		if (validSelected(new Point(x,y))) { //only when real move and not shortcut
+			Checker selected = checkers[x][y];
+			if (y == 0 && selected.getType() == CheckerType.WHITE)
+				selected.setType(CheckerType.WHITEKING);
+			if (y == b.BOARDSIZE - 1 && selected.getType() == CheckerType.BLACK)
+				selected.setType(CheckerType.BLACKKING);
+		}
 
 		if (turn == Player.BLACK)
 			turn = Player.WHITE;
 		else
 			turn = Player.BLACK;
+		
 		calcPossible();
+		b.repaint();
 	}
 
 	/**
 	 * Calculate all possible moves across the board for the current player
 	 */
-	private void calcPossible() {
+	public void calcPossible() {
 		possibleSelections.clear();
 		for (int x = 0; x < Board.BOARDSIZE; x++) {
 			for (int y = 0; y < Board.BOARDSIZE; y++) {
@@ -133,7 +150,7 @@ public class Game {
 					continue;
 				if (!canBeSelected(c))
 					continue;
-				if (!checkSkips(new Point(x,y), 1).isEmpty()) {
+				if (!checkSkips(new Point(x,y), 1, false).isEmpty()) {
 					System.out.println("Skip available");
 					if (!hasToStrike) {
 						possibleSelections.clear();
@@ -147,7 +164,7 @@ public class Game {
 				}
 			}
 		}
-		b.repaint();
+		//b.repaint();
 	}
 
 	/**
@@ -162,21 +179,18 @@ public class Game {
 			return new ArrayList<>();
 		Checker c = checkers[p.x][p.y];
 		boolean king = isKing(c);
-//		if (king) { //TODO FIX
-//			
-//		} else
-		if (!checkSkips(p, delta).isEmpty()) {// skips available
+		System.out.println("bool: " + !checkSkips(p, delta, false).isEmpty());
+		if (!checkSkips(p, delta, false).isEmpty()) {// skips available
 			if (!hasToStrike) {
 				selectedPosibilities.clear();
 				hasToStrike = true;
 			}
-			System.out.println("Skip calced");
+			System.out.println("Skip calced delta: ");
 			//selectedPosibilities.addAll(checkSkips(p, delta)); //TODO TEST IF UNNESSESARY
-
-			return checkSkips(p, delta);
+			return checkSkips(p, delta, true);
 		}
 		List<Point> temp = new ArrayList<>();
-
+		
 		temp.add(new Point(p.x + delta, p.y + (direction * (delta))));
 		temp.add(new Point(p.x - delta, p.y + (direction * (delta))));
 		if (king) {
@@ -184,15 +198,27 @@ public class Game {
 			temp.add(new Point(p.x - delta, p.y + ((direction == -1 ? +1 : -1) * (delta))));
 			if (delta == 1) {
 				int dtemp = 2;
-				while(!calculatePosibilities(p, dtemp).isEmpty()){
-					if (hasToStrike)
-						break;
-					selectedPosibilities.addAll(calculatePosibilities(p, dtemp));
+				List<Point> templist = new ArrayList<>();
+				while(!calculatePosibilities(p, dtemp).isEmpty()){ //checkSkips(p,dtemp, true)
+					if (hasToStrike) { //check if he is calculating strike
+						if (!temp.isEmpty()) { //check if this is first available tile after strike has been spottet
+							possibleSelections.clear();
+							possibleSelections.add(p);
+							selectedPosibilities.clear();
+							temp.clear();
+							templist.clear();
+						}
+						if (checkSkips(p,dtemp, false).isEmpty())
+							break;
+						templist.addAll(checkSkips(p,dtemp, true)); //TODO REMOVE LOOP
+					} else {
+						templist.addAll(calculatePosibilities(p, dtemp));
+					}
 					dtemp++;
 				} 
+				templist.addAll(checkValidLandingLocations(temp));
+				return templist;
 			}
-			
-			//System.out.println("ran: " + new Point(p.x + 1, p.y + (direction == -1 ? +1 : -1)) + " : " + new Point(p.x - 1, p.y + (direction == -1 ? +1 : -1)));
 		}
 		return checkValidLandingLocations(temp);
 	}
@@ -201,32 +227,52 @@ public class Game {
 	 * Check if there are skips available for point p
 	 * @param p Point where to check from
 	 * @param delta depth delta
+	 * @param extend boolean to extend the selection until it can't no more
 	 * @return List of points where you can skip to
 	 */
-	private List<Point> checkSkips(Point p, int delta) {
+	private List<Point> checkSkips(Point p, int delta, boolean extend) {
+		System.out.println("CheckSkips: " + delta + " : " + p);
 		List<Point> temp = new ArrayList<>();
 		int direction = getDirection();
-
-		if (b.checkBounds(new Point(p.x + (delta), p.y + (direction * (delta)))) && checkers[p.x + delta][p.y + (direction * delta)] != null && !canBeSelected(checkers[p.x + delta][p.y + (direction * delta)]) 
-		 && b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) {
-			temp.add(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))));
+		for (int i = 0; i < 2; i++) {
+			if (i == 1)//reverse direction
+				direction = (direction == -1 ? +1 : -1);
+			if (b.checkBounds(new Point(p.x + (delta), p.y + (direction * (delta)))) && checkers[p.x + delta][p.y + (direction * delta)] != null
+					&& !canBeSelected(checkers[p.x + delta][p.y + (direction * delta)]) && b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))))
+					&& checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) {
+				temp.add(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))));
+				if (extend)
+					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.RIGHTDOWN : Direction.RIGHTUP));
+			}
+			if (b.checkBounds(new Point(p.x - (delta), p.y + (direction * (delta)))) && checkers[p.x - delta][p.y + (direction * delta)] != null
+					&& !canBeSelected(checkers[p.x - delta][p.y + (direction * delta)]) && b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))))
+					&& checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {
+				temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
+				if (extend)
+					temp.addAll(addAfter(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.LEFTDOWN : Direction.LEFTUP));
+			}
 		}
-		if (b.checkBounds(new Point(p.x - (delta), p.y + (direction * (delta)))) && checkers[p.x - delta][p.y + (direction * delta)] != null && !canBeSelected(checkers[p.x - delta][p.y + (direction * delta)]) 
-		 && b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {
-			temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
-		}
-
-		// temp.add(new Point(p.x + delta, p.y + (direction * delta)));
-		// temp.add(new Point(p.x - delta, p.y + (direction * delta)));
 		return temp;
+	}
+	
+	private List<Point> addAfter(Point start, Direction dir){
+		List<Point> list = new ArrayList<>();
+		int delta = 1;
+		System.out.println("Started: " + start);
+		while (b.checkBounds(new Point(start.x + (dir.x * delta), start.y + (dir.y * delta))) && checkers[start.x + (dir.x * delta)][start.y + (dir.y * delta)] == null) {
+			System.out.println("Added: " + new Point(start.x + (dir.x * delta), start.y + (dir.y * delta)));
+			list.add(new Point(start.x + (dir.x * delta), start.y + (dir.y * delta)));
+			delta++;
+		}
+		return list;
 	}
 
 	/**
-	 * Returns true if current selected checker is valid
+	 * Returns true if given checker is valid
 	 * @return 
 	 */
-	private boolean validSelected() {
-		if (selectedX == -1 || selectedY == -1)
+	public boolean validSelected(Point p) {
+		if (p.x == -1 || p.y == -1)
 			return false;
 		return true;
 	}
