@@ -3,7 +3,6 @@ package me.stijn.checkers.objects;
 public class Checker {
 	
 	private CheckerType type;
-	private Checker toStrike;
 	
 	public Checker(CheckerType type) {
 		this.type = type;
@@ -16,9 +15,6 @@ public class Checker {
 	public CheckerType getType() {
 		return type;
 	}
-
-	
-	
 	
 	
 	

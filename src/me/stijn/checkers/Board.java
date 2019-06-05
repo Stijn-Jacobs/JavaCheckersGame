@@ -40,6 +40,9 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 
 	public int CHECKERSIZE, XOFFSET, YOFFSET;
 
+	/**
+	 * Board object where the checker game is playing on
+	 */
 	public Board() {
 		game = new Game(this);
 		addMouseListener(this);
@@ -84,6 +87,10 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		}
 	}
 	
+	/**
+	 * Draw current animating, checkers and other animations.
+	 * @param g graphics to be drawn on
+	 */
 	private void drawAnimating(Graphics2D g) {
 		for (Checker c : animating.keySet()) {
 			drawChecker(c, animating.get(c), g);
@@ -95,6 +102,14 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		}
 	}
 	
+	/**
+	 * Draw eclipse fromout a center point
+	 * @param x center x
+	 * @param y center y
+	 * @param width 
+	 * @param height
+	 * @return Returns Ellipse2D
+	 */
 	private Ellipse2D getEllipseFromCenter(double x, double y, double width, double height){
 	    double newX = x - width / 2.0;
 	    double newY = y - height / 2.0;
@@ -102,6 +117,10 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 	    return ellipse;
 	}
 
+	/**
+	 * Draw checkers on the board
+	 * @param g Graphics to be draw on
+	 */
 	private void drawCheckers(Graphics2D g) {
 		if (game.getState() != GameState.RUNNING)
 			return;
@@ -135,6 +154,12 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		}
 	}
 	
+	/**
+	 * Draw a single checker 
+	 * @param c Cjhecker
+	 * @param point Point where to draw the checker
+	 * @param g Graphics to be draw on
+	 */
 	public void drawChecker(Checker c, Point2D.Double point, Graphics2D g) {
 		int margin = CHECKERSIZE < 50 ? 3 : 5; // padding arround checker
 		switch (c.getType()) {
@@ -155,6 +180,10 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		}
 	}
 
+	/**
+	 * Draw the board itself
+	 * @param g Graphics to be drawn on
+	 */
 	private void drawBoard(Graphics2D g) {
 		final int LEADINGSIZE = super.getHeight() < super.getWidth() ? super.getHeight() : super.getWidth(); // check welke dimensie als richtlijn gebruikt moet worden voor grootte
 		CHECKERSIZE = (LEADINGSIZE - 8) / BOARDSIZE; // -8 voor border
@@ -252,6 +281,11 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 		repaint();
 	}
 	
+	/**
+	 * Check if given point is within bounds of the board
+	 * @param p Point to check
+	 * @return boolean
+	 */
 	public boolean checkBounds(Point p) {
 		if (p.getX() < 0 || p.getX() > BOARDSIZE - 1) //ceck x out of bounds of board
 			return false;

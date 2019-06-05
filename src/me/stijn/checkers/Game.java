@@ -11,7 +11,7 @@ import me.stijn.checkers.objects.Checker.CheckerType;
 
 public class Game {
 
-	private static final int CHECKERS = 5;
+	private static final int CHECKERS = 20;
 
 	Board b;
 	public Checker[][] checkers;
@@ -24,10 +24,14 @@ public class Game {
 
 	GameState state;
 	Player turn;
-
+	
+	/**
+	 * Create a new game object, which holds the current game status
+	 * @param b Board on which the game is played on
+	 */
 	public Game(Board b) {
 		this.b = b;
-		checkers = new Checker[b.BOARDSIZE][b.BOARDSIZE];
+		checkers = new Checker[Board.BOARDSIZE][Board.BOARDSIZE];
 
 		state = GameState.RUNNING;
 		turn = Player.BLACK;
@@ -36,10 +40,13 @@ public class Game {
 		initCheckers();
 	}
 
+	/**
+	 * Initially setup checkers in starting positions
+	 */
 	private void initCheckers() {
 		int temp = 0;
-		for (int y = 0; y < b.BOARDSIZE; y++) { // fill black checkers
-			for (int x = y % 2; x < b.BOARDSIZE; x += 2) {
+		for (int y = 0; y < Board.BOARDSIZE; y++) { // fill black checkers
+			for (int x = y % 2; x < Board.BOARDSIZE; x += 2) {
 				if (temp >= CHECKERS)
 					break;
 				temp++;
@@ -47,8 +54,8 @@ public class Game {
 			}
 		}
 		temp = 0;
-		for (int y = b.BOARDSIZE - 1; y > 0; y--) { // fill white checkers
-			for (int x = y % 2; x < b.BOARDSIZE; x += 2) {
+		for (int y = Board.BOARDSIZE - 1; y > 0; y--) { // fill white checkers
+			for (int x = y % 2; x < Board.BOARDSIZE; x += 2) {
 				if (temp >= CHECKERS)
 					break;
 				temp++;
@@ -63,10 +70,19 @@ public class Game {
 		calcPossible();
 	}
 
+	/**
+	 * Get the current state of the game
+	 * @return game state
+	 */
 	public GameState getState() {
 		return state;
 	}
 
+	/**
+	 * Set selected checker field, and automatically calculate next valid moves
+	 * @param x coord of to be selected checker field
+	 * @param y coord of to be selected checker field
+	 */
 	public void setSelected(int x, int y) {
 		selectedX = x;
 		selectedY = y;
@@ -74,6 +90,11 @@ public class Game {
 		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
 	}
 
+	/**
+	 * Change turns 
+	 * @param x coord of selected piece 
+	 * @param y coord of selected piece 
+	 */
 	public void changeTurns(int x, int y) { 
 		selectedPosibilities.clear();
 		possibleSelections.clear();
@@ -100,10 +121,13 @@ public class Game {
 		calcPossible();
 	}
 
+	/**
+	 * Calculate all possible moves across the board for the current player
+	 */
 	private void calcPossible() {
 		possibleSelections.clear();
-		for (int x = 0; x < b.BOARDSIZE; x++) {
-			for (int y = 0; y < b.BOARDSIZE; y++) {
+		for (int x = 0; x < Board.BOARDSIZE; x++) {
+			for (int y = 0; y < Board.BOARDSIZE; y++) {
 				Checker c = checkers[x][y];
 				if (c == null)
 					continue;
@@ -126,23 +150,30 @@ public class Game {
 		b.repaint();
 	}
 
+	/**
+	 * Calculate possible moves for point p
+	 * @param p Point from where to calculate
+	 * @param delta depth delta
+	 * @return list of possible selectable points
+	 */
 	public List<Point> calculatePosibilities(Point p, int delta) {
 		int direction = getDirection();
 		if ((p.x == -1 && p.y == -1) || checkers[p.x][p.y] == null) // check if checker selected is null and if so stop checking posibilities
 			return new ArrayList<>();
 		Checker c = checkers[p.x][p.y];
 		boolean king = isKing(c);
-		if (king) {
-			
-		} else if (!checkSkips(p, 1).isEmpty()) {// skips available
+//		if (king) { //TODO FIX
+//			
+//		} else
+		if (!checkSkips(p, delta).isEmpty()) {// skips available
 			if (!hasToStrike) {
 				selectedPosibilities.clear();
 				hasToStrike = true;
 			}
 			System.out.println("Skip calced");
-			//selectedPosibilities.addAll(checkSkips(p, 1)); //TODO TEST IF UNNESSESARY
+			//selectedPosibilities.addAll(checkSkips(p, delta)); //TODO TEST IF UNNESSESARY
 
-			return checkSkips(p, 1);
+			return checkSkips(p, delta);
 		}
 		List<Point> temp = new ArrayList<>();
 
@@ -154,6 +185,8 @@ public class Game {
 			if (delta == 1) {
 				int dtemp = 2;
 				while(!calculatePosibilities(p, dtemp).isEmpty()){
+					if (hasToStrike)
+						break;
 					selectedPosibilities.addAll(calculatePosibilities(p, dtemp));
 					dtemp++;
 				} 
@@ -164,6 +197,12 @@ public class Game {
 		return checkValidLandingLocations(temp);
 	}
 
+	/**
+	 * Check if there are skips available for point p
+	 * @param p Point where to check from
+	 * @param delta depth delta
+	 * @return List of points where you can skip to
+	 */
 	private List<Point> checkSkips(Point p, int delta) {
 		List<Point> temp = new ArrayList<>();
 		int direction = getDirection();
@@ -182,20 +221,38 @@ public class Game {
 		return temp;
 	}
 
+	/**
+	 * Returns true if current selected checker is valid
+	 * @return 
+	 */
 	private boolean validSelected() {
 		if (selectedX == -1 || selectedY == -1)
 			return false;
 		return true;
 	}
 
+	/**
+	 * Get the direction of current team
+	 * @return 
+	 */
 	private int getDirection() {
 		return turn == Player.BLACK ? +1 : -1;
 	}
 
+	/**
+	 * Returns true if checker is king
+	 * @param c Checker to be checked
+	 * @return 
+	 */
 	public boolean isKing(Checker c) {
 		return (c.getType() == CheckerType.BLACKKING || c.getType() == CheckerType.WHITEKING);
 	}
 
+	/**
+	 * Check if given list contains valid, empty locations. And return that.
+	 * @param list
+	 * @return
+	 */
 	private List<Point> checkValidLandingLocations(List<Point> list) {
 		List<Point> temp = new ArrayList<>();
 		for (Point p : list) {
@@ -206,6 +263,11 @@ public class Game {
 		return temp;
 	}
 
+	/**
+	 * Returns true if the checker trying to be selected is valid for selection and owned by the current player.
+	 * @param c
+	 * @return
+	 */
 	public boolean canBeSelected(Checker c) {
 		if (c == null)
 			return false;

@@ -1,6 +1,8 @@
 package me.stijn.checkers;
 
 import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
 
@@ -27,8 +29,17 @@ public class Main extends Application {
 		panel.addKeyListener(board);
 		panel.add(board);
 		panel.setVisible(true);
+		
+		panel.addWindowListener(new WindowAdapter() {
+			  public void windowClosing(WindowEvent we) {
+			    System.exit(0);
+			  }
+		});
 	}
 	
+	/**
+	 * Complete reset the game
+	 */
 	public static void resetGame() {
 		System.out.println("Game reset");
 		panel.remove(board);
@@ -38,5 +49,7 @@ public class Main extends Application {
 		panel.add(board);
 		panel.setVisible(true);
 	}
+
+
 
 }
