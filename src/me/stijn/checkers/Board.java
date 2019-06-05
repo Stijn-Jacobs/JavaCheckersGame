@@ -177,7 +177,7 @@ public class Board extends JPanel implements MouseListener,KeyListener{
 			break;
 		}
 		g.fillOval((int)(point.x * CHECKERSIZE) + XOFFSET + margin, (int)(point.y * CHECKERSIZE) + YOFFSET + margin, CHECKERSIZE - (margin * 2), CHECKERSIZE - (margin * 2));//draw checker
-		if (game.isKing(c)) {
+		if (c.isKing()) {
 			g.drawImage(c.getType() == CheckerType.BLACKKING ? KINGIMGBLACK : KINGIMGWHITE, (int)(point.x * CHECKERSIZE) + XOFFSET + (CHECKERSIZE / 6), (int)(point.y * CHECKERSIZE) + YOFFSET + (CHECKERSIZE / 6), (int)(CHECKERSIZE/1.5), (int)(CHECKERSIZE/1.5), null); //draw king on top of checker
 		}
 	}

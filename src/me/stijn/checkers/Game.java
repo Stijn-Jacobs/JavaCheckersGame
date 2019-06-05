@@ -150,7 +150,7 @@ public class Game implements Serializable {
 					continue;
 				if (!canBeSelected(c))
 					continue;
-				if (!checkSkips(new Point(x,y), 1, false).isEmpty()) {
+				if (!checkSkips(new Point(x,y), 1, false, c.isKing()).isEmpty()) {
 					System.out.println("Skip available");
 					if (!hasToStrike) {
 						possibleSelections.clear();
@@ -178,16 +178,16 @@ public class Game implements Serializable {
 		if ((p.x == -1 && p.y == -1) || checkers[p.x][p.y] == null) // check if checker selected is null and if so stop checking posibilities
 			return new ArrayList<>();
 		Checker c = checkers[p.x][p.y];
-		boolean king = isKing(c);
-		System.out.println("bool: " + !checkSkips(p, delta, false).isEmpty());
-		if (!checkSkips(p, delta, false).isEmpty()) {// skips available
+		boolean king = c.isKing();
+		System.out.println("bool: " + !checkSkips(p, delta, false, king).isEmpty());
+		if (!checkSkips(p, delta, false, king).isEmpty()) {// skips available
 			if (!hasToStrike) {
 				selectedPosibilities.clear();
 				hasToStrike = true;
 			}
 			System.out.println("Skip calced delta: ");
 			//selectedPosibilities.addAll(checkSkips(p, delta)); //TODO TEST IF UNNESSESARY
-			return checkSkips(p, delta, true);
+			return checkSkips(p, delta, true, king);
 		}
 		List<Point> temp = new ArrayList<>();
 		
@@ -208,9 +208,9 @@ public class Game implements Serializable {
 							temp.clear();
 							templist.clear();
 						}
-						if (checkSkips(p,dtemp, false).isEmpty())
+						if (checkSkips(p,dtemp, false, king).isEmpty())
 							break;
-						templist.addAll(checkSkips(p,dtemp, true)); //TODO REMOVE LOOP
+						templist.addAll(checkSkips(p,dtemp, true, king)); //TODO REMOVE LOOP
 					} else {
 						templist.addAll(calculatePosibilities(p, dtemp));
 					}
@@ -230,8 +230,8 @@ public class Game implements Serializable {
 	 * @param extend boolean to extend the selection until it can't no more
 	 * @return List of points where you can skip to
 	 */
-	private List<Point> checkSkips(Point p, int delta, boolean extend) {
-		System.out.println("CheckSkips: " + delta + " : " + p);
+	private List<Point> checkSkips(Point p, int delta, boolean extend, boolean king) {
+		//System.out.println("CheckSkips: " + delta + " : " + p);
 		List<Point> temp = new ArrayList<>();
 		int direction = getDirection();
 		for (int i = 0; i < 2; i++) {
@@ -241,14 +241,14 @@ public class Game implements Serializable {
 					&& !canBeSelected(checkers[p.x + delta][p.y + (direction * delta)]) && b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))))
 					&& checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) {
 				temp.add(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))));
-				if (extend)
+				if (extend && king)
 					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.RIGHTDOWN : Direction.RIGHTUP));
 			}
 			if (b.checkBounds(new Point(p.x - (delta), p.y + (direction * (delta)))) && checkers[p.x - delta][p.y + (direction * delta)] != null
 					&& !canBeSelected(checkers[p.x - delta][p.y + (direction * delta)]) && b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))))
 					&& checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {
 				temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
-				if (extend)
+				if (extend && king)
 					temp.addAll(addAfter(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.LEFTDOWN : Direction.LEFTUP));
 			}
 		}
@@ -257,8 +257,8 @@ public class Game implements Serializable {
 	
 	private List<Point> addAfter(Point start, Direction dir){
 		List<Point> list = new ArrayList<>();
-		int delta = 1;
-		System.out.println("Started: " + start);
+		int delta = 1; 
+		System.out.println("Started: " + start + " : " + dir);
 		while (b.checkBounds(new Point(start.x + (dir.x * delta), start.y + (dir.y * delta))) && checkers[start.x + (dir.x * delta)][start.y + (dir.y * delta)] == null) {
 			System.out.println("Added: " + new Point(start.x + (dir.x * delta), start.y + (dir.y * delta)));
 			list.add(new Point(start.x + (dir.x * delta), start.y + (dir.y * delta)));
@@ -285,14 +285,14 @@ public class Game implements Serializable {
 		return turn == Player.BLACK ? +1 : -1;
 	}
 
-	/**
-	 * Returns true if checker is king
-	 * @param c Checker to be checked
-	 * @return 
-	 */
-	public boolean isKing(Checker c) {
-		return (c.getType() == CheckerType.BLACKKING || c.getType() == CheckerType.WHITEKING);
-	}
+//	/**
+//	 * Returns true if checker is king
+//	 * @param c Checker to be checked
+//	 * @return 
+//	 */
+//	public boolean isKing(Checker c) {
+//		return (c.getType() == CheckerType.BLACKKING || c.getType() == CheckerType.WHITEKING);
+//	}
 
 	/**
 	 * Check if given list contains valid, empty locations. And return that.
