@@ -24,6 +24,14 @@ public class Checker implements Serializable {
 		return (type == CheckerType.BLACKKING ||type == CheckerType.WHITEKING);
 	}
 	
+	public boolean isBlack() {
+		return (type == CheckerType.BLACK || type == CheckerType.BLACKKING);
+	}
+	
+	public boolean isWhite() {
+		return (type == CheckerType.WHITE || type == CheckerType.WHITEKING);
+	}
+	
 	
 	
 	
