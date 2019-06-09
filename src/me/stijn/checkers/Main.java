@@ -1,6 +1,7 @@
 package me.stijn.checkers;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -29,13 +30,20 @@ public class Main extends Application {
 	
 	public static boolean showFPS = false;
 	public static boolean debug = false;
-	public static boolean AI = true;
+	public static boolean AI = false;
 	
-
-	private static Board board;
+	/**
+	 * Settings
+	 */
+	public static final int CHECKERS = 20; //default 20
+	public static final int BOARDSIZE = 10, CHECKER_ANIMATION_TIME = 100; //default 10 and 100
+	public static final Color BLACKTILE = Color.GRAY, WHITETILE = Color.WHITE; //default GRAY and WHITE
+	public static final Color BLACKCHECKER = Color.BLACK, WHITECHECKER = Color.LIGHT_GRAY; //default BLACK and LIGHT_GRAY
+	
+	//fields
+	public static Board board;
 	public static JFrame frame;
 	private static FinishScreen screen;
-	//public static JLayeredPane pane;
 	
 	public static void main(String args[]) throws Exception {
 		launch();
@@ -48,7 +56,7 @@ public class Main extends Application {
 		frame.setSize(new Dimension(1000, 800));
 		frame.setMinimumSize(new Dimension(300,300));
 		frame.setLocationRelativeTo(null);
-		board = new Board();
+		board = new Board(BOARDSIZE);
 		frame.add(board);
 		
 		frame.addKeyListener(board);//key listener 
@@ -66,7 +74,7 @@ public class Main extends Application {
 		System.out.println("Game reset");
 		frame.removeKeyListener(board);
 		frame.remove(board);
-		board = new Board();
+		board = new Board(BOARDSIZE);
 		frame.add(board);
 		frame.addKeyListener(board);
 		frame.setVisible(true);

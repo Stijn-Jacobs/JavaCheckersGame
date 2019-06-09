@@ -18,7 +18,9 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
@@ -30,10 +32,8 @@ import me.stijn.checkers.objects.Checker.CheckerType;
 
 public class Board extends JPanel implements MouseListener, KeyListener {
 
-	public static final int BOARDSIZE = 10, CHECKER_ANIMATION_TIME = 100;
-	public static final Color BLACKTILE = Color.GRAY, WHITETILE = Color.WHITE;
-	public static final Color BLACKCHECKER = Color.BLACK, WHITECHECKER = Color.LIGHT_GRAY;
 	public static BufferedImage KINGIMGWHITE, KINGIMGBLACK;
+	public final int BOARDSIZE;
 
 	public HashMap<Checker, Point2D.Double> animating = new HashMap<>();
 	public HashMap<Point, Integer> removalAnimation = new HashMap<>();
@@ -42,17 +42,24 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 
 	public int CHECKERSIZE, XOFFSET, YOFFSET;
 	
+	public List<Point> bestMoves = new ArrayList<Point>();
+	
+	/**
+	 * Copy board method
+	 * @deprecated
+	 * @return
+	 */
 	public Board copy() {
-		Board copy = new Board();
+		Board copy = new Board(BOARDSIZE);
 		copy.game = game.copy(copy);
 		return copy;
 	}
 	
-
 	/**
 	 * Board object where the checker game is playing on
 	 */
-	public Board() {
+	public Board(int boardsize) {
+		this.BOARDSIZE = boardsize;
 		game = new Game(this);
 		addMouseListener(this);
 
@@ -119,7 +126,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 			if (i == 1) {
 				start = new Point((int) (BOARDSIZE * CHECKERSIZE) + XOFFSET + margin + (CHECKERSIZE / 3), (int) ((CHECKERSIZE * BOARDSIZE) - (CHECKERSIZE * 1.5)) + YOFFSET + margin + 4); // white point
 			}
-			g.setColor(i == 0 ? BLACKCHECKER : WHITECHECKER);
+			g.setColor(i == 0 ? Main.BLACKCHECKER : Main.WHITECHECKER);
 			g.fillOval(start.x, start.y, CHECKERSIZE - (margin * 2), CHECKERSIZE - (margin * 2));// draw checker
 			g.setColor(i == 0 ? Color.WHITE : Color.BLACK);
 			g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, CHECKERSIZE / 2));
@@ -146,8 +153,8 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		for (Point p : removalAnimation.keySet()) {
 			Integer progress = removalAnimation.get(p);
 			g.setColor(Color.RED);
-			g.fill(getEllipseFromCenter((p.x * CHECKERSIZE) + XOFFSET + (CHECKERSIZE / 2), (p.y * CHECKERSIZE) + YOFFSET + (CHECKERSIZE / 2), (double) CHECKERSIZE / CHECKER_ANIMATION_TIME * progress,
-					(double) CHECKERSIZE / CHECKER_ANIMATION_TIME * progress));
+			g.fill(getEllipseFromCenter((p.x * CHECKERSIZE) + XOFFSET + (CHECKERSIZE / 2), (p.y * CHECKERSIZE) + YOFFSET + (CHECKERSIZE / 2), (double) CHECKERSIZE / Main.CHECKER_ANIMATION_TIME * progress,
+					(double) CHECKERSIZE / Main.CHECKER_ANIMATION_TIME * progress));
 		}
 	}
 
@@ -176,6 +183,12 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		if (game.getState() != GameState.RUNNING)
 			return;
 		g.setStroke(new BasicStroke(3));
+		
+		
+		for (Point p : bestMoves) {
+			g.setColor(Color.ORANGE);
+			g.fillRect(XOFFSET + p.x * CHECKERSIZE, YOFFSET + p.y * CHECKERSIZE, CHECKERSIZE, CHECKERSIZE); // draw selected
+		}
 
 		// draw selected checker and posibilities to move to
 		if (game.selectedX != -1 && game.selectedY != -1) {
@@ -218,14 +231,14 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		switch (c.getType()) {
 		case BLACK:
 		case BLACKKING:
-			g.setColor(BLACKCHECKER);
+			g.setColor(Main.BLACKCHECKER);
 			break;
 		case WHITE:
 		case WHITEKING:
 			g.setColor(Color.BLACK);
 			g.drawOval((int) (point.x * CHECKERSIZE) + XOFFSET + margin, (int) (point.y * CHECKERSIZE) + YOFFSET + margin, CHECKERSIZE - (margin * 2), CHECKERSIZE - (margin * 2));// draw outline for
 																																													// white only
-			g.setColor(WHITECHECKER);
+			g.setColor(Main.WHITECHECKER);
 			break;
 		}
 		g.fillOval((int) (point.x * CHECKERSIZE) + XOFFSET + margin, (int) (point.y * CHECKERSIZE) + YOFFSET + margin, CHECKERSIZE - (margin * 2), CHECKERSIZE - (margin * 2));// draw checker
@@ -249,9 +262,9 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		g.setStroke(new BasicStroke(4));
 		g.setColor(Color.BLACK);
 		g.drawRect(XOFFSET, YOFFSET, CHECKERSIZE * BOARDSIZE, CHECKERSIZE * BOARDSIZE); // draw rand
-		g.setColor(WHITETILE);
+		g.setColor(Main.WHITETILE);
 		g.fillRect(XOFFSET, YOFFSET, CHECKERSIZE * BOARDSIZE, CHECKERSIZE * BOARDSIZE); // draw achtergrond / witte tegels
-		g.setColor(BLACKTILE);
+		g.setColor(Main.BLACKTILE);
 		for (int y = 0; y < BOARDSIZE; y++) { // draw zwarte tegels
 			for (int x = y % 2; x < BOARDSIZE; x += 2) {
 				g.fillRect(XOFFSET + x * CHECKERSIZE, YOFFSET + y * CHECKERSIZE, CHECKERSIZE, CHECKERSIZE);
@@ -314,7 +327,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 			if (game.hasToStrike)
 				handleStrike(c,from,to);
 			game.checkers[to.x][to.y] = c;
-			game.changeTurns(to.x, to.y);
+			//game.changeTurns(to.x, to.y);
 		}
 	}
 	
@@ -359,8 +372,8 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 			@Override
 			public void handle(long now) {
 				int frame = 0;
-				float xadd = (to.x - from.x) / (float) CHECKER_ANIMATION_TIME;
-				float yadd = (to.y - from.y) / (float) CHECKER_ANIMATION_TIME;
+				float xadd = (to.x - from.x) / (float) Main.CHECKER_ANIMATION_TIME;
+				float yadd = (to.y - from.y) / (float) Main.CHECKER_ANIMATION_TIME;
 				Point strike = null;
 
 				// removes selection
@@ -374,7 +387,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 					strike = handleStrike(c,from,to);
 				}
 
-				while (frame <= CHECKER_ANIMATION_TIME) {
+				while (frame <= Main.CHECKER_ANIMATION_TIME) {
 					if (System.currentTimeMillis() - curtime < 2)
 						continue;
 					curtime = System.currentTimeMillis();
@@ -411,23 +424,32 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 	}
 	
 	public int getScore() {
-		System.out.println("Returning for: " + game.turn);
+		//System.out.println("Returning for: " + game.turn);
 		int base = game.turn == Player.BLACK ? game.blackCheckers : game.whiteCheckers;
 		
-		for (int x = 0; x < Board.BOARDSIZE; x++) {
-			for (int y = 0; y < Board.BOARDSIZE; y++) {
+		for (int x = 0; x < BOARDSIZE; x++) {
+			for (int y = 0; y < BOARDSIZE; y++) {
 				if (game.checkers[x][y] == null)
 					continue;
 				Checker c = game.checkers[x][y];
 				if (((c.isBlack() && game.turn == Player.WHITE) || (c.isWhite() && game.turn == Player.BLACK))) 
-					base--;
+					base-=2;
 				if (c.isKing())
-					base+=3;
-				base += game.calculatePosibilities(new Point(x,y), 1).size();
+					base+=5;
+				base += c.isKing() ? game.calculatePosibilities(new Point(x,y), 1).size() / 4 : game.calculatePosibilities(new Point(x,y), 1).size();
+				game.turn = game.turn == Player.BLACK ? Player.WHITE : Player.BLACK;
+				if (!game.checkSkips(new Point(x,y),1,true,c.isKing()).isEmpty())
+					base-=10;
+				game.turn = game.turn == Player.BLACK ? Player.WHITE : Player.BLACK;
 			}
 		}
+		if (game.hasToStrike)
+			base+=20;
 		
-		System.out.println("SCORE: " + base);
+		
+		
+		
+		//System.out.println("SCORE: " + base);
 		
 		return base;
 	}
@@ -454,7 +476,6 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		System.out.println("Key: " + e.getKeyChar());
 		switch (e.getKeyCode()) {
 		case KeyEvent.VK_DELETE:
 			Main.resetGame();

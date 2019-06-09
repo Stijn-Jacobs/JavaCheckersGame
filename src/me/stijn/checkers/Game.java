@@ -7,14 +7,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javafx.animation.AnimationTimer;
 import me.stijn.checkers.ai.AIPlayer;
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.FinishScreen;
 import me.stijn.checkers.objects.Checker.CheckerType;
 
 public class Game implements Serializable {
-
-	private static final int CHECKERS = 0;
 
 	Board b;
 	public Checker[][] checkers;
@@ -24,19 +23,18 @@ public class Game implements Serializable {
 	public Set<Point> possibleSelections = new HashSet<>();
 	public Set<Point> selectedPosibilities = new HashSet<>();
 
-	boolean hasToStrike = false;
+	public boolean hasToStrike = false;
 
 	GameState state;
-	public Player turn;
+	Player turn;
 
 	/**
 	 * Create a new game object, which holds the current game status
-	 * 
 	 * @param b Board on which the game is played on
 	 */
 	public Game(Board b) {
 		this.b = b;
-		checkers = new Checker[Board.BOARDSIZE][Board.BOARDSIZE];
+		checkers = new Checker[b.BOARDSIZE][b.BOARDSIZE];
 
 		state = GameState.RUNNING;
 		turn = Player.WHITE;
@@ -50,9 +48,9 @@ public class Game implements Serializable {
 	 */
 	private void initCheckers() {
 		int temp = 0;
-		for (int y = 0; y < Board.BOARDSIZE; y++) { // fill black checkers
-			for (int x = y % 2; x < Board.BOARDSIZE; x += 2) {
-				if (temp >= CHECKERS)
+		for (int y = 0; y < b.BOARDSIZE; y++) { // fill black checkers
+			for (int x = y % 2; x < b.BOARDSIZE; x += 2) {
+				if (temp >= Main.CHECKERS)
 					break;
 				temp++;
 				checkers[x][y] = new Checker(CheckerType.BLACK);
@@ -60,9 +58,9 @@ public class Game implements Serializable {
 			}
 		}
 		temp = 0;
-		for (int y = Board.BOARDSIZE - 1; y > 0; y--) { // fill white checkers
-			for (int x = y % 2; x < Board.BOARDSIZE; x += 2) {
-				if (temp >= CHECKERS)
+		for (int y = b.BOARDSIZE - 1; y > 0; y--) { // fill white checkers
+			for (int x = y % 2; x < b.BOARDSIZE; x += 2) {
+				if (temp >= Main.CHECKERS)
 					break;
 				temp++;
 				checkers[x][y] = new Checker(CheckerType.WHITE);
@@ -70,10 +68,10 @@ public class Game implements Serializable {
 			}
 		}
 
-		//debug checkers
-		checkers[3][5] = new Checker(CheckerType.BLACK); 
-		checkers[7][5] = new Checker(CheckerType.BLACK);
-		checkers[2][6] = new Checker(CheckerType.WHITEKING);
+		// debug checkers
+//		checkers[3][5] = new Checker(CheckerType.BLACK);
+//		checkers[7][5] = new Checker(CheckerType.BLACK);
+//		checkers[2][6] = new Checker(CheckerType.WHITEKING);
 		calcPossibleSelectable();
 	}
 
@@ -115,7 +113,7 @@ public class Game implements Serializable {
 		selectedY = -1;
 		if (checkGameFinished())
 			return;
-		//check strike again mechanic same turn
+		// check strike again mechanic same turn
 		if (hasToStrike && validSelected(new Point(x, y))) { // has striked previous turn check if he can strike again
 			hasToStrike = false;
 			calculatePosibilities(new Point(x, y), 1); // check if he can strike again
@@ -136,36 +134,47 @@ public class Game implements Serializable {
 			Checker selected = checkers[x][y];
 			if (y == 0 && selected.getType() == CheckerType.WHITE)
 				selected.setType(CheckerType.WHITEKING);
-			if (y == Board.BOARDSIZE - 1 && selected.getType() == CheckerType.BLACK)
+			if (y == b.BOARDSIZE - 1 && selected.getType() == CheckerType.BLACK)
 				selected.setType(CheckerType.BLACKKING);
 		}
-		
+
 		if (turn == Player.BLACK)
 			turn = Player.WHITE;
-		else
+		else 
 			turn = Player.BLACK;
-
+			//Main.board.bestMoves.clear();
+		
 		calcPossibleSelectable();
 		
-		if (Main.AI) {
-			AIPlayer p = new AIPlayer(b);
-			p.calculateTree();
-		}
-		
 		if (possibleSelections.isEmpty()) {
-			//no more moves available for current player
+			// no more moves available for current player
 			if (turn == Player.BLACK)
 				finishGame(WinReason.WHITE);
-			else 
+			else
 				finishGame(WinReason.BLACK);
 		}
 		b.repaint();
+		
+		if (Main.AI) {
+			Thread thrd = new Thread() {
+				@Override
+				public void run() {
+					AIPlayer p = new AIPlayer();
+					p.calculateTree(b);
+				}
+			};
+			thrd.start();
+		}
 	}
-	
+
+	/**
+	 * Checks if the game is completed, by looping though all fields and checking if 1 team is out off checkers
+	 * @return boolean
+	 */
 	private boolean checkGameFinished() {
-		int black = -1,white = -1;
-		for (int x = 0; x < Board.BOARDSIZE; x++) {
-			for (int y = 0; y < Board.BOARDSIZE; y++) {
+		int black = -1, white = -1;
+		for (int x = 0; x < b.BOARDSIZE; x++) {
+			for (int y = 0; y < b.BOARDSIZE; y++) {
 				if (checkers[x][y] != null) {
 					if (checkers[x][y].isBlack())
 						black++;
@@ -174,43 +183,63 @@ public class Game implements Serializable {
 				}
 			}
 		}
-		
-		//game finished
+
+		// game finished
 		if (black == -1) {
 			finishGame(WinReason.WHITE);
 			return true;
-		}
-		else if (white == -1) {
+		} else if (white == -1) {
 			finishGame(WinReason.BLACK);
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
+	/**
+	 * Method to call when game is verified finished
+	 * @param win WinReason
+	 */
 	private void finishGame(WinReason win) {
 		System.out.println("Player: " + win + " has won the game");
 		
-		FinishScreen scrn = new FinishScreen(win);
-		Main.displayFinishScreen(scrn);
-		state = GameState.STOPPED;
+		AnimationTimer animation = new AnimationTimer() {
+			long curtime = System.currentTimeMillis();
+			@Override
+			public void handle(long now) {
+				int frame = 0;
+				checkers = new Checker[b.BOARDSIZE][b.BOARDSIZE];
+				while (frame < (b.BOARDSIZE * b.BOARDSIZE)) {
+					if (System.currentTimeMillis() - curtime < 1D / b.BOARDSIZE * 50)
+						continue;
+					curtime = System.currentTimeMillis();
+					checkers[frame%b.BOARDSIZE][frame/b.BOARDSIZE] = frame % 2 == 0 ? new Checker(CheckerType.BLACK) : new Checker(CheckerType.WHITE);
+					System.out.println("frame: " + frame);
+					b.repaint();
+					frame++;
+				}
+				FinishScreen scrn = new FinishScreen(win);
+				Main.displayFinishScreen(scrn);
+				state = GameState.STOPPED;
+				stop();
+			}
+		};
+		animation.start();
 	}
-	
 
 	/**
 	 * Calculate all possible moves across the board for the current player
 	 */
 	public void calcPossibleSelectable() {
 		possibleSelections.clear();
-		for (int x = 0; x < Board.BOARDSIZE; x++) {
-			for (int y = 0; y < Board.BOARDSIZE; y++) {
+		for (int x = 0; x < b.BOARDSIZE; x++) {
+			for (int y = 0; y < b.BOARDSIZE; y++) {
 				Checker c = checkers[x][y];
 				if (c == null)
 					continue;
 				if (!canBeSelected(c))
 					continue;
 				if (!checkSkips(new Point(x, y), 1, false, c.isKing()).isEmpty()) {
-					System.out.println("Skip available");
 					if (!hasToStrike) {
 						possibleSelections.clear();
 						hasToStrike = true;
@@ -223,7 +252,6 @@ public class Game implements Serializable {
 				}
 			}
 		}
-		// b.repaint();
 	}
 
 	/**
@@ -245,7 +273,6 @@ public class Game implements Serializable {
 				hasToStrike = true;
 			}
 			System.out.println("Skip calced");
-			// selectedPosibilities.addAll(checkSkips(p, delta)); //TODO TEST IF UNNESSESARY
 			return checkSkips(p, delta, true, king);
 		}
 		List<Point> temp = new ArrayList<>();
@@ -255,7 +282,7 @@ public class Game implements Serializable {
 		if (king) {
 			temp.add(new Point(p.x + delta, p.y + ((direction == -1 ? +1 : -1) * (delta))));
 			temp.add(new Point(p.x - delta, p.y + ((direction == -1 ? +1 : -1) * (delta))));
-			if (delta == 1) {//itterate
+			if (delta == 1) {// itterate
 				int dtemp = 2;
 				List<Point> templist = new ArrayList<>();
 				while (!calculatePosibilities(p, dtemp).isEmpty()) { // checkSkips(p,dtemp, true)
@@ -278,9 +305,8 @@ public class Game implements Serializable {
 				templist.addAll(checkValidLandingLocations(temp, p));
 				if (hasToStrike)
 					return templist;
-				
 				// remove unreachable points when jumping
-				List<Point> returnlist = new ArrayList<>(); 
+				List<Point> returnlist = new ArrayList<>();
 				for (Direction d : Direction.values()) {
 					Point tempp = (Point) p.clone();
 					templist.remove(tempp);
@@ -305,15 +331,15 @@ public class Game implements Serializable {
 	 * @param extend boolean to extend the selection until it can't no more
 	 * @return List of points where you can skip to
 	 */
-	private List<Point> checkSkips(Point p, int delta, boolean extend, boolean king) { //grootste beun methode van heel het spel
+	public List<Point> checkSkips(Point p, int delta, boolean extend, boolean king) { // grootste beun methode van heel het spel
 		List<Point> temp = new ArrayList<>();
 		int direction = getDirection();
-		
+
 		for (int i = 0; i < 2; i++) {
 			if (i == 1)// reverse direction
 				direction = (direction == -1 ? +1 : -1);
 			Point p1 = new Point(p.x + (delta), p.y + (direction * (delta)));
-			if (b.checkBounds(new Point(p.x + (delta - 1), p.y + (direction * (delta - 1)))) //check if prev checker is empty
+			if (b.checkBounds(new Point(p.x + (delta - 1), p.y + (direction * (delta - 1)))) // check if prev checker is empty
 					&& (checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))])) && b.checkBounds(p1)
 					&& checkers[p1.x][p1.y] != null && !canBeSelected(checkers[p1.x][p1.y]) && // check if strike isn't empty and on opposite team
 					b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) { // check if landing is empty
@@ -322,9 +348,9 @@ public class Game implements Serializable {
 					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.RIGHTDOWN : Direction.RIGHTUP));
 			}
 			Point p2 = new Point(p.x - (delta), p.y + (direction * (delta)));
-			if (b.checkBounds(new Point(p.x - (delta - 1), p.y + (direction * (delta - 1)))) //check if prev checker is empty
+			if (b.checkBounds(new Point(p.x - (delta - 1), p.y + (direction * (delta - 1)))) // check if prev checker is empty
 					&& (checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))])) && b.checkBounds(p2)
-					&& checkers[p2.x][p2.y] != null && !canBeSelected(checkers[p2.x][p2.y]) &&// check if strike isn't empty and on opposite team
+					&& checkers[p2.x][p2.y] != null && !canBeSelected(checkers[p2.x][p2.y]) && // check if strike isn't empty and on opposite team
 					b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {// check if landing is empty
 				temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
 				if (extend && king)
@@ -336,6 +362,7 @@ public class Game implements Serializable {
 
 	/**
 	 * Add all availanble open spaces after point start in direction dir
+	 * 
 	 * @param start start point
 	 * @param dir Direction
 	 * @return list of points
@@ -379,9 +406,10 @@ public class Game implements Serializable {
 	private List<Point> checkValidLandingLocations(List<Point> list, Point origin) {
 		List<Point> temp = new ArrayList<>();
 		for (Point p : list) {
-			if (b.checkBounds(p))
+			if (b.checkBounds(p)) {
 				if (checkers[(int) p.getX()][(int) p.getY()] == null) // check if valid location in board and space already occupied
 					temp.add(p);
+			}
 		}
 		return temp;
 	}
@@ -401,9 +429,14 @@ public class Game implements Serializable {
 			return false;
 		return true;
 	}
-	
+
+	/**
+	 * Removes checker at location provided
+	 * @param x of checker to be removed 
+	 * @param y of checker to be removed
+	 */
 	public void remove(int x, int y) {
-		if (!b.checkBounds(new Point(x,y)))
+		if (!b.checkBounds(new Point(x, y)))
 			return;
 		if (checkers[x][y] == null)
 			return;
@@ -412,22 +445,48 @@ public class Game implements Serializable {
 			blackCheckers--;
 		else if (remove.isWhite())
 			whiteCheckers--;
-		
-		checkers[x][y] = null; 
+
+		checkers[x][y] = null;
 	}
-	
+
+	/**
+	 * Copy method
+	 * @deprecated
+	 * @param b
+	 * @return
+	 */
 	public Game copy(Board b) {
 		Game copy = new Game(b);
-		copy.checkers = checkers.clone();
+		copy.checkers = new Checker[b.BOARDSIZE][b.BOARDSIZE];
+		for (int x = 0; x < b.BOARDSIZE; x++) {
+			for (int y = 0; y < b.BOARDSIZE; y++) {
+				if (checkers[x][y] == null)
+					continue;
+				copy.checkers[x][y] = new Checker(checkers[x][y].getType());
+			}
+		}
 		copy.turn = turn;
 		return copy;
+	}
+	
+	/**
+	 * Print the board
+	 */
+	public void printCheckers() {
+		for (int x = 0; x < b.BOARDSIZE; x++) {
+			for (int y = 0; y < b.BOARDSIZE; y++) {
+				if (checkers[x][y] == null)
+					continue;
+				System.out.println(x + " : " + y + " : " + checkers[x][y].getType());
+			}
+		}
 	}
 
 	public enum Player {
 		BLACK, WHITE;
 	}
-	
-	public enum WinReason{
-		BLACK,WHITE,DRAW;
+
+	public enum WinReason {
+		BLACK, WHITE, DRAW;
 	}
 }
