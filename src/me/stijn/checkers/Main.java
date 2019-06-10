@@ -35,8 +35,8 @@ public class Main extends Application {
 	/**
 	 * Settings
 	 */
-	public static final int CHECKERS = 20; //default 20
-	public static final int BOARDSIZE = 10, CHECKER_ANIMATION_TIME = 100; //default 10 and 100
+	public static final int CHECKERS = 12; //default 20
+	public static final int BOARDSIZE = 8, CHECKER_ANIMATION_TIME = 100; //default 10 and 100
 	public static final Color BLACKTILE = Color.GRAY, WHITETILE = Color.WHITE; //default GRAY and WHITE
 	public static final Color BLACKCHECKER = Color.BLACK, WHITECHECKER = Color.LIGHT_GRAY; //default BLACK and LIGHT_GRAY
 	

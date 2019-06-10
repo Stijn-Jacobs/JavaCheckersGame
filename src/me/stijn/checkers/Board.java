@@ -102,6 +102,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 			g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 30));
 			g2d.drawString("FPS: " + 1000 / (System.currentTimeMillis() - time), 1, 50);
 		}
+		
 		if (Main.debug)
 			g2d.drawString("DEBUG ENABLED:", 1, 100);
 	}
@@ -302,10 +303,6 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 			Checker temp = game.checkers[game.selectedX][game.selectedY];
 			
 			move(temp, new Point(game.selectedX, game.selectedY), new Point(x,y), true);
-//			game.checkers[x][y] = null;
-//			game.checkers[game.selectedX][game.selectedY] = null;
-//
-//			animateMovement(temp, new Point(game.selectedX, game.selectedY), new Point(x,y));
 			return;
 		}
 
@@ -339,8 +336,6 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		int miny = to.x < from.x ? to.y : from.y;
 		int maxy = to.x > from.x ? to.y : from.y;
 
-		System.out.println("Start: " + minx + " : " + miny + " | " + maxx + " : " + maxy);
-
 		int tempy = miny;
 
 		int strikeX = 0, strikeY = 0;
@@ -363,7 +358,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		return new Point(strikeX, strikeY);
 	}
 	
-	private void animateMovement(Checker c, Point from, Point to) {
+	synchronized private void animateMovement(Checker c, Point from, Point to) {
 		AnimationTimer animation = new AnimationTimer() {
 			long curtime = System.currentTimeMillis();
 			int selectedX = game.selectedX;
@@ -445,12 +440,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		}
 		if (game.hasToStrike)
 			base+=20;
-		
-		
-		
-		
-		//System.out.println("SCORE: " + base);
-		
+	
 		return base;
 	}
 

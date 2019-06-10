@@ -95,7 +95,7 @@ public class Game implements Serializable {
 		selectedY = y;
 		hasToStrike = false; // TODO VERIFY
 		selectedPosibilities.clear();
-		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y), 1));
+		selectedPosibilities.addAll(calculatePosibilities(new Point(x, y),1));
 	}
 
 	/**
@@ -115,6 +115,7 @@ public class Game implements Serializable {
 			return;
 		// check strike again mechanic same turn
 		if (hasToStrike && validSelected(new Point(x, y))) { // has striked previous turn check if he can strike again
+			Checker c = checkers[x][y];
 			hasToStrike = false;
 			calculatePosibilities(new Point(x, y), 1); // check if he can strike again
 			if (hasToStrike) { // can strike again
@@ -203,7 +204,7 @@ public class Game implements Serializable {
 	private void finishGame(WinReason win) {
 		System.out.println("Player: " + win + " has won the game");
 		
-		AnimationTimer animation = new AnimationTimer() {
+		AnimationTimer animation = new AnimationTimer() { //fill board animation
 			long curtime = System.currentTimeMillis();
 			@Override
 			public void handle(long now) {
@@ -214,7 +215,6 @@ public class Game implements Serializable {
 						continue;
 					curtime = System.currentTimeMillis();
 					checkers[frame%b.BOARDSIZE][frame/b.BOARDSIZE] = frame % 2 == 0 ? new Checker(CheckerType.BLACK) : new Checker(CheckerType.WHITE);
-					System.out.println("frame: " + frame);
 					b.repaint();
 					frame++;
 				}
@@ -344,8 +344,8 @@ public class Game implements Serializable {
 					&& checkers[p1.x][p1.y] != null && !canBeSelected(checkers[p1.x][p1.y]) && // check if strike isn't empty and on opposite team
 					b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) { // check if landing is empty
 				temp.add(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))));
-				if (extend && king)
-					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.RIGHTDOWN : Direction.RIGHTUP));
+				if (extend && king)//add points extending in direction
+					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 0 && turn == Player.BLACK || i == 1 && turn == Player.WHITE ? Direction.RIGHTDOWN : Direction.RIGHTUP));
 			}
 			Point p2 = new Point(p.x - (delta), p.y + (direction * (delta)));
 			if (b.checkBounds(new Point(p.x - (delta - 1), p.y + (direction * (delta - 1)))) // check if prev checker is empty
@@ -353,8 +353,8 @@ public class Game implements Serializable {
 					&& checkers[p2.x][p2.y] != null && !canBeSelected(checkers[p2.x][p2.y]) && // check if strike isn't empty and on opposite team
 					b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {// check if landing is empty
 				temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
-				if (extend && king)
-					temp.addAll(addAfter(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))), i == 1 ? Direction.LEFTDOWN : Direction.LEFTUP));
+				if (extend && king)//add points extending in direction
+					temp.addAll(addAfter(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))), i == 0 && turn == Player.BLACK || i == 1 && turn == Player.WHITE ? Direction.LEFTDOWN : Direction.LEFTUP));
 			}
 		}
 		return temp;
@@ -445,7 +445,6 @@ public class Game implements Serializable {
 			blackCheckers--;
 		else if (remove.isWhite())
 			whiteCheckers--;
-
 		checkers[x][y] = null;
 	}
 
