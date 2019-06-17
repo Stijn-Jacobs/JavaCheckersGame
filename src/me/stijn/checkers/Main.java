@@ -1,37 +1,25 @@
 package me.stijn.checkers;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLayeredPane;
-import javax.swing.JPanel;
-import javax.swing.OverlayLayout;
 
 import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.FinishScreen;
 
 public class Main extends Application {
 	
 	public static boolean showFPS = false;
 	public static boolean debug = false;
-	public static boolean AI = false;
-	
+
 	/**
 	 * Settings
 	 */

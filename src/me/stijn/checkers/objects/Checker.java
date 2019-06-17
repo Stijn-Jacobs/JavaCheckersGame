@@ -33,8 +33,6 @@ public class Checker implements Serializable {
 	}
 	
 	
-	
-	
 	public enum CheckerType {
 		BLACK,WHITE,BLACKKING,WHITEKING;
 	}

@@ -3,7 +3,6 @@ package me.stijn.checkers;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -18,14 +17,13 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import javafx.animation.AnimationTimer;
+import me.stijn.checkers.Game.GameState;
 import me.stijn.checkers.Game.Player;
 import me.stijn.checkers.objects.Checker;
 import me.stijn.checkers.objects.Checker.CheckerType;
@@ -41,8 +39,6 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 	public Game game;
 
 	public int CHECKERSIZE, XOFFSET, YOFFSET;
-	
-	public List<Point> bestMoves = new ArrayList<Point>();
 	
 	/**
 	 * Copy board method
@@ -135,7 +131,14 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		}
 
 	}
-
+	
+	/**
+	 * Print centered string
+	 * @param s String to print
+	 * @param XPos X coord of center
+	 * @param YPos Y coord of center
+	 * @param g Graphics2D to draw on
+	 */
 	private void printCenteredString(String s, int XPos, int YPos, Graphics2D g) {
 		int startX = (int) g.getFontMetrics().getStringBounds(s, g).getWidth() / 2;
 		int startY = (int) g.getFontMetrics().getStringBounds(s, g).getHeight() / 4;
@@ -184,12 +187,6 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		if (game.getState() != GameState.RUNNING)
 			return;
 		g.setStroke(new BasicStroke(3));
-		
-		
-		for (Point p : bestMoves) {
-			g.setColor(Color.ORANGE);
-			g.fillRect(XOFFSET + p.x * CHECKERSIZE, YOFFSET + p.y * CHECKERSIZE, CHECKERSIZE, CHECKERSIZE); // draw selected
-		}
 
 		// draw selected checker and posibilities to move to
 		if (game.selectedX != -1 && game.selectedY != -1) {
@@ -281,6 +278,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		if (!checkBounds(new Point(x, y)))
 			return;
 		Checker selected = game.checkers[x][y];
+		//debug move checkers
 		if (Main.debug) {
 			if (!game.validSelected(new Point(game.selectedX, game.selectedY))) {
 				game.selectedX = x;
@@ -302,7 +300,7 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 
 			Checker temp = game.checkers[game.selectedX][game.selectedY];
 			
-			move(temp, new Point(game.selectedX, game.selectedY), new Point(x,y), true);
+			move(temp, new Point(game.selectedX, game.selectedY), new Point(x,y), true); //perform the move
 			return;
 		}
 
@@ -313,7 +311,13 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		repaint();
 	}
 	
-	
+	/**
+	 * Perform a move
+	 * @param c Checker to move
+	 * @param from Point from
+	 * @param to Point to
+	 * @param animate boolean to animate true or false
+	 */
 	public void move(Checker c, Point from, Point to, boolean animate) {
 		game.checkers[to.x][to.y] = null;
 		game.checkers[from.x][from.y] = null;
@@ -328,6 +332,13 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		}
 	}
 	
+	/**
+	 * Checks and performs strikes if found available
+	 * @param c Checker to strike with
+	 * @param from Point from where it moved
+	 * @param to Point to where it moves
+	 * @return point which has been striked (optional)
+	 */
 	private Point handleStrike(Checker c, Point from, Point to) {
 		// get passed checker
 		int minx = to.x < from.x ? to.x : from.x;
@@ -358,7 +369,13 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		return new Point(strikeX, strikeY);
 	}
 	
-	synchronized private void animateMovement(Checker c, Point from, Point to) {
+	/**
+	 * Performs the animation of a checker moving
+	 * @param c Checker to move
+	 * @param from Where to move from
+	 * @param to Where to move to
+	 */
+	private void animateMovement(Checker c, Point from, Point to) {
 		AnimationTimer animation = new AnimationTimer() {
 			long curtime = System.currentTimeMillis();
 			int selectedX = game.selectedX;
@@ -418,6 +435,11 @@ public class Board extends JPanel implements MouseListener, KeyListener {
 		return true;
 	}
 	
+	/**
+	 * Optionally for AI implementation
+	 * @deprecated
+	 * @return
+	 */
 	public int getScore() {
 		//System.out.println("Returning for: " + game.turn);
 		int base = game.turn == Player.BLACK ? game.blackCheckers : game.whiteCheckers;

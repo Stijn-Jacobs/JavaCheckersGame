@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 import javafx.animation.AnimationTimer;
-import me.stijn.checkers.ai.AIPlayer;
 import me.stijn.checkers.objects.Checker;
-import me.stijn.checkers.objects.FinishScreen;
 import me.stijn.checkers.objects.Checker.CheckerType;
+import me.stijn.checkers.objects.FinishScreen;
 
 public class Game implements Serializable {
 
@@ -131,7 +130,7 @@ public class Game implements Serializable {
 		hasToStrike = false;
 
 		// handle king when reaching edge
-		if (validSelected(new Point(x, y))) { // only when real move and not shortcut
+		if (validSelected(new Point(x, y))) { // only when real move and not shortcut to change teams
 			Checker selected = checkers[x][y];
 			if (y == 0 && selected.getType() == CheckerType.WHITE)
 				selected.setType(CheckerType.WHITEKING);
@@ -143,8 +142,7 @@ public class Game implements Serializable {
 			turn = Player.WHITE;
 		else 
 			turn = Player.BLACK;
-			//Main.board.bestMoves.clear();
-		
+
 		calcPossibleSelectable();
 		
 		if (possibleSelections.isEmpty()) {
@@ -155,17 +153,6 @@ public class Game implements Serializable {
 				finishGame(WinReason.BLACK);
 		}
 		b.repaint();
-		
-		if (Main.AI) {
-			Thread thrd = new Thread() {
-				@Override
-				public void run() {
-					AIPlayer p = new AIPlayer();
-					p.calculateTree(b);
-				}
-			};
-			thrd.start();
-		}
 	}
 
 	/**
@@ -285,18 +272,20 @@ public class Game implements Serializable {
 			if (delta == 1) {// itterate
 				int dtemp = 2;
 				List<Point> templist = new ArrayList<>();
-				while (!calculatePosibilities(p, dtemp).isEmpty()) { // checkSkips(p,dtemp, true)
+				//iterate through all available delta's
+				while (!calculatePosibilities(p, dtemp).isEmpty()) {
 					if (hasToStrike) { // check if he is calculating strike
-						if (!temp.isEmpty()) { // check if this is first available tile after strike has been spottet
+						if (!templist.isEmpty()) { // check if this is first available tile after strike has been spottet
 							possibleSelections.clear();
 							possibleSelections.add(p);
 							selectedPosibilities.clear();
 							temp.clear();
 							templist.clear();
+							templist.addAll(checkSkips(p, dtemp-1, true, king));
 						}
 						if (checkSkips(p, dtemp, false, king).isEmpty())
 							break;
-						templist.addAll(checkSkips(p, dtemp, true, king)); // TODO REMOVE LOOP
+						templist.addAll(checkSkips(p, dtemp, true, king));
 					} else {
 						templist.addAll(calculatePosibilities(p, dtemp));
 					}
@@ -338,21 +327,31 @@ public class Game implements Serializable {
 		for (int i = 0; i < 2; i++) {
 			if (i == 1)// reverse direction
 				direction = (direction == -1 ? +1 : -1);
+			//RIGHT
 			Point p1 = new Point(p.x + (delta), p.y + (direction * (delta)));
-			if (b.checkBounds(new Point(p.x + (delta - 1), p.y + (direction * (delta - 1)))) // check if prev checker is empty
-					&& (checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))])) && b.checkBounds(p1)
-					&& checkers[p1.x][p1.y] != null && !canBeSelected(checkers[p1.x][p1.y]) && // check if strike isn't empty and on opposite team
-					b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) { // check if landing is empty
+			if (b.checkBounds(new Point(p.x + (delta - 1), p.y + (direction * (delta - 1)))) // check if prev tile is empty
+					&& (checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x + (delta - 1)][p.y + (direction * (delta - 1))])) && 
+					
+					b.checkBounds(p1) && checkers[p1.x][p1.y] != null && !canBeSelected(checkers[p1.x][p1.y]) && // check if strike isn't empty and on opposite team
+					
+					b.checkBounds(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x + (delta + 1)][p.y + (direction * (delta + 1))] == null) { // check if landing tile is empty
+				
 				temp.add(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))));
+				
 				if (extend && king)//add points extending in direction
 					temp.addAll(addAfter(new Point(p.x + (delta + 1), p.y + (direction * (delta + 1))), i == 0 && turn == Player.BLACK || i == 1 && turn == Player.WHITE ? Direction.RIGHTDOWN : Direction.RIGHTUP));
 			}
+			//LEFT
 			Point p2 = new Point(p.x - (delta), p.y + (direction * (delta)));
-			if (b.checkBounds(new Point(p.x - (delta - 1), p.y + (direction * (delta - 1)))) // check if prev checker is empty
-					&& (checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))])) && b.checkBounds(p2)
-					&& checkers[p2.x][p2.y] != null && !canBeSelected(checkers[p2.x][p2.y]) && // check if strike isn't empty and on opposite team
-					b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {// check if landing is empty
+			if (b.checkBounds(new Point(p.x - (delta - 1), p.y + (direction * (delta - 1)))) // check if prev tile is empty
+					&& (checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))] == null || canBeSelected(checkers[p.x - (delta - 1)][p.y + (direction * (delta - 1))])) &&
+					
+					b.checkBounds(p2) && checkers[p2.x][p2.y] != null && !canBeSelected(checkers[p2.x][p2.y]) && // check if strike isn't empty and on opposite team
+					
+					b.checkBounds(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1)))) && checkers[p.x - (delta + 1)][p.y + (direction * (delta + 1))] == null) {// check if landing tile is empty
+				
 				temp.add(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))));
+				
 				if (extend && king)//add points extending in direction
 					temp.addAll(addAfter(new Point(p.x - (delta + 1), p.y + (direction * (delta + 1))), i == 0 && turn == Player.BLACK || i == 1 && turn == Player.WHITE ? Direction.LEFTDOWN : Direction.LEFTUP));
 			}
@@ -481,11 +480,19 @@ public class Game implements Serializable {
 		}
 	}
 
+	/**
+	 * Enums
+	 */
+	
 	public enum Player {
 		BLACK, WHITE;
 	}
 
+	public enum GameState {
+		RUNNING, STOPPED;
+	}
+	
 	public enum WinReason {
-		BLACK, WHITE, DRAW;
+		BLACK, WHITE, DRAW; //DRAW???
 	}
 }
